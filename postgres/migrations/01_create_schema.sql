@@ -52,3 +52,4 @@ CREATE TABLE IF NOT EXISTS achievements (
     candidate_id INTEGER REFERENCES candidates(id) ON DELETE CASCADE,
     description TEXT NOT NULL
 );
+
