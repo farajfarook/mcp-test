@@ -34,7 +34,9 @@ def register_get_job_details(mcp: FastMCP):
                 "id": job_result[0][0],
                 "title": job_result[0][1],
                 "description": job_result[0][2],
-                "created_at": job_result[0][3].isoformat() if job_result[0][3] else None,
+                "created_at": (
+                    job_result[0][3].isoformat() if job_result[0][3] else None
+                ),
             }
 
             # Get application statistics for this job
@@ -50,21 +52,18 @@ def register_get_job_details(mcp: FastMCP):
             WHERE job_id = %s
             """
             stats_result = fetch_all(stats_query, (job_id,))
-            
+
             application_stats = {
                 "total_applications": stats_result[0][0],
                 "applied": stats_result[0][1],
                 "screening": stats_result[0][2],
                 "interview": stats_result[0][3],
                 "offer": stats_result[0][4],
-                "rejected": stats_result[0][5]
+                "rejected": stats_result[0][5],
             }
 
             # Compile all information
-            job_details = {
-                "job": job,
-                "application_stats": application_stats
-            }
+            job_details = {"job": job, "application_stats": application_stats}
 
             print(f"Retrieved full details for job ID {job_id}")
             return job_details
