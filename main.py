@@ -22,4 +22,4 @@ def goodbye_world(name: str) -> str:
 
 
 if __name__ == "__main__":
-    main()
+    mcp.run()
