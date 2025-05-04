@@ -12,6 +12,8 @@ from mcp_tools.list_all_jobs import register_list_all_jobs
 from mcp_tools.get_job_applications_with_candidates import (
     register_get_job_applications_with_candidates,
 )
+from mcp_tools.search_jobs_by_title import register_search_jobs_by_title
+from mcp_tools.get_job_details import register_get_job_details
 
 # Initialize MCP server
 mcp = FastMCP("PageDown ATS", "0.1.0")
@@ -24,6 +26,8 @@ register_get_job_application_statuses(mcp)
 register_get_candidate_job_applications(mcp)
 register_list_all_jobs(mcp)
 register_get_job_applications_with_candidates(mcp)
+register_search_jobs_by_title(mcp)
+register_get_job_details(mcp)
 
 if __name__ == "__main__":
     mcp.run("sse")
