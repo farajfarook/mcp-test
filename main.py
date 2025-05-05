@@ -17,10 +17,14 @@ from mcp_tools.get_job_details import register_get_job_details
 from mcp_tools.update_job_application_status import (
     register_update_job_application_status,
 )
+from mcp_resources.jobs import register_jobs_resource
 
 # Initialize MCP server
 mcp = FastMCP("PageDown ATS", "0.1.0")
 
+# Register resources
+register_jobs_resource(mcp)
+# Register Tools
 register_test_tools(mcp)
 register_get_all_candidate_names(mcp)
 register_search_candidates_by_name(mcp)
