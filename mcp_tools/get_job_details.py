@@ -43,11 +43,12 @@ def register_get_job_details(mcp: FastMCP):
             stats_query = """
             SELECT 
                 COUNT(*) as total_applications,
-                COUNT(CASE WHEN status = 'applied' THEN 1 END) as applied,
-                COUNT(CASE WHEN status = 'screening' THEN 1 END) as screening,
-                COUNT(CASE WHEN status = 'interview' THEN 1 END) as interview,
-                COUNT(CASE WHEN status = 'offer' THEN 1 END) as offer,
-                COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected
+                COUNT(CASE WHEN status = 'Received' THEN 1 END) as received,
+                COUNT(CASE WHEN status = 'Screening' THEN 1 END) as screening,
+                COUNT(CASE WHEN status = 'Interviews' THEN 1 END) as interviews,
+                COUNT(CASE WHEN status = 'Offer' THEN 1 END) as offer,
+                COUNT(CASE WHEN status = 'Hired' THEN 1 END) as hired,
+                COUNT(CASE WHEN status = 'Not Proceeding' THEN 1 END) as not_proceeding
             FROM job_applications
             WHERE job_id = %s
             """
@@ -55,11 +56,12 @@ def register_get_job_details(mcp: FastMCP):
 
             application_stats = {
                 "total_applications": stats_result[0][0],
-                "applied": stats_result[0][1],
+                "received": stats_result[0][1],
                 "screening": stats_result[0][2],
-                "interview": stats_result[0][3],
+                "interviews": stats_result[0][3],
                 "offer": stats_result[0][4],
-                "rejected": stats_result[0][5],
+                "hired": stats_result[0][5],
+                "not_proceeding": stats_result[0][6],
             }
 
             # Compile all information
