@@ -28,12 +28,15 @@ def get_db_connection():
             conn.close()
 
 
-def execute_query(query: str, params: tuple = None):
-    """Executes a given SQL query with optional parameters."""
+def execute_query(query: str, params: tuple = None) -> tuple | None:
+    """Executes a given SQL query with optional parameters and returns the first row if any."""
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(query, params)
             conn.commit()
+            if cur.description:
+                return cur.fetchone()
+            return None
 
 
 def fetch_all(query: str, params: tuple = None) -> list:
