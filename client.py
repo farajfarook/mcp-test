@@ -1,5 +1,6 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
+import re
 
 models = {
     "llama_3b": "meta-llama/Llama-3.2-3B-Instruct",
@@ -24,15 +25,38 @@ except Exception as e:
     exit()
 
 
-def generate_response(prompt):
+message_history = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Hi there!"},
+    {"role": "assistant", "content": "Hello! How can I assist you today?"},
+]
 
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "Hi there!"},
-        {"role": "assistant", "content": "Hello! How can I assist you today?"},
-        {"role": "user", "content": prompt},
-    ]
-    template = tokenizer.apply_chat_template(messages, tokenize=False)
+available_tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_all_cadidates",
+            "description": "Returns all candidates.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
+    },
+]
+
+
+def add_message(role, content):
+    """Adds a message to the message history."""
+    message_history.append({"role": role, "content": content})
+
+
+def generate_response(prompt):
+    add_message("user", prompt)
+    template = tokenizer.apply_chat_template(
+        message_history, tools=available_tools, tokenize=False
+    )
     input_ids = tokenizer.encode(template, return_tensors="pt").to(model.device)
     outputs = model.generate(
         input_ids,  # input_ids is the input tensor
@@ -42,9 +66,15 @@ def generate_response(prompt):
         num_return_sequences=1,
         pad_token_id=tokenizer.eos_token_id,  # pad_token_id is the token used for padding
     )
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+    # Only decode the newly generated tokens (exclude the prompt tokens)
+    generated_ids = outputs[0][input_ids.shape[-1] :]
+    response = tokenizer.decode(generated_ids)
+    # response = re.sub(r"<\|start_header_id\|>.*?<\|end_header_id\|>\s*", "", response)
+    start_py_marker = "<|python_tag|>"
+    end_marker = "<|eom_id|>"
+    return response
 
 
-prompt = "What is the capital of France?"
-
-print(generate_response(prompt))
+print(generate_response("whats the capital of France?"))
+# print(generate_response("Hey How are you?"))
+# print(generate_response("What about Germany?"))
