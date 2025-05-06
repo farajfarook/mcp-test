@@ -28,7 +28,10 @@ except Exception as e:
 message_history = [
     {
         "role": "system",
-        "content": "You are a helpful assistant. Use tools only when explicitly requested by the user or when necessary; otherwise respond directly without invoking any tools.",
+        "content": (
+            "You are a helpful assistant. Only use tools when **explicitly asked** to do so. "
+            "Do not use tools for general questions; answer directly whenever possible."
+        ),
     },
     {"role": "user", "content": "Hi there!"},
     {"role": "assistant", "content": "Hello! How can I assist you today?"},
