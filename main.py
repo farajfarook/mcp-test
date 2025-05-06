@@ -17,6 +17,7 @@ from mcp_tools.get_job_details import register_get_job_details
 from mcp_tools.update_job_application_status import (
     register_update_job_application_status,
 )
+from mcp_tools.update_job_description import register_update_job_description
 from mcp_resources.jobs import register_jobs_resource
 
 # Initialize MCP server
@@ -36,6 +37,7 @@ register_get_job_applications_with_candidates(mcp)
 register_search_jobs_by_title(mcp)
 register_get_job_details(mcp)
 register_update_job_application_status(mcp)
+register_update_job_description(mcp)
 
 if __name__ == "__main__":
     mcp.run("sse")
