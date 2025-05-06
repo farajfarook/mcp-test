@@ -26,7 +26,10 @@ except Exception as e:
 
 
 message_history = [
-    {"role": "system", "content": "You are a helpful assistant."},
+    {
+        "role": "system",
+        "content": "You are a helpful assistant. Use tools only when explicitly requested by the user or when necessary; otherwise respond directly without invoking any tools.",
+    },
     {"role": "user", "content": "Hi there!"},
     {"role": "assistant", "content": "Hello! How can I assist you today?"},
 ]
@@ -69,12 +72,9 @@ def generate_response(prompt):
     # Only decode the newly generated tokens (exclude the prompt tokens)
     generated_ids = outputs[0][input_ids.shape[-1] :]
     response = tokenizer.decode(generated_ids)
-    # response = re.sub(r"<\|start_header_id\|>.*?<\|end_header_id\|>\s*", "", response)
-    start_py_marker = "<|python_tag|>"
-    end_marker = "<|eom_id|>"
     return response
 
 
 print(generate_response("whats the capital of France?"))
-# print(generate_response("Hey How are you?"))
-# print(generate_response("What about Germany?"))
+# print(generate_response("Hey How are you?", use_tools=True))
+# print(generate_response("What about Germany?", use_tools=True))
