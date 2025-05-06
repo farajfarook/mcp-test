@@ -89,6 +89,11 @@ def generate_response(prompt):
     # Only decode the newly generated tokens (exclude the prompt tokens)
     generated_ids = outputs[0][input_ids.shape[-1] :]
     response = tokenizer.decode(generated_ids)
+
+    # Strip out special tokens
+    response = response.replace("<|start_header_id|>assistant<|end_header_id|>", "")
+    response = response.replace("<|eot_id|>", "")
+    response = response.strip()
     return response
 
 
