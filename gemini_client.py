@@ -1,10 +1,7 @@
 import os
-import sys
 import json
 import warnings
-import logging
 import asyncio
-from typing import Optional, List
 
 from mcp import ClientSession
 from mcp.client.sse import sse_client
@@ -65,6 +62,5 @@ async def run_agent():
     return
 
 
-# Entry point: run the async agent loop
 if __name__ == "__main__":
     asyncio.run(run_agent())
