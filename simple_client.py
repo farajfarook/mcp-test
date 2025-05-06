@@ -5,44 +5,6 @@ import torch
 import asyncio
 import json
 
-
-# Initialize the SSE client
-def get_parsed_tools(tool: Tool):
-    return {
-        "type": "function",
-        "function": {
-            "name": tool.name,
-            "description": tool.description,
-            "parameters": {
-                "type": "object",
-                "properties": tool.inputSchema.get("properties"),
-                "required": tool.inputSchema.get("required"),
-            },
-        },
-    }
-
-
-# Initialize the list to store parsed tools
-parsed_tools = []
-
-
-async def fetch_parsed_tools():
-    async with sse_client("http://localhost:8000/sse") as stream:
-        async with ClientSession(*stream) as session:
-            await session.initialize()
-            print("Session initialized")
-            tools = await session.list_tools()
-            for tool in tools.tools:
-                parsed_tool = get_parsed_tools(tool)
-                parsed_tools.append(parsed_tool)
-                print(f"Tool: {tool.name}")
-    return
-
-
-asyncio.run(fetch_parsed_tools())
-
-
-# Initialize the model and tokenizer
 models = {
     "llama_3b": "meta-llama/Llama-3.2-3B-Instruct",
     "llama_1b": "meta-llama/Llama-3.2-1B-Instruct",
@@ -61,6 +23,7 @@ except Exception as e:
     print(f"Error loading model or tokenizer: {e}")
     exit()
 
+mcp_server_url = "http://localhost:8000/sse"
 
 history = [
     {
@@ -71,7 +34,10 @@ history = [
         ),
     },
     {"role": "user", "content": "Hi there!"},
-    {"role": "assistant", "content": "Hello! How can I assist you today?"},
+    {
+        "role": "assistant",
+        "content": "Hello! How can I assist you today?",
+    },
 ]
 
 
@@ -88,11 +54,29 @@ class GenResponse:
     func: dict
 
 
-def generate_response(prompt) -> GenResponse:
+def parse_tools(tools):
+    parsed_tools = []
+    for tool in tools.tools:
+        parsed_tool = {
+            "type": "function",
+            "function": {
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": {
+                    "type": "object",
+                    "properties": tool.inputSchema.get("properties"),
+                    "required": tool.inputSchema.get("required"),
+                },
+            },
+        }
+        parsed_tools.append(parsed_tool)
+        print(f"Tool: {tool.name}")
+    return parsed_tools
+
+
+def generate_response(prompt, tools) -> GenResponse:
     add_history("user", prompt)
-    template = tokenizer.apply_chat_template(
-        history, tools=parsed_tools, tokenize=False
-    )
+    template = tokenizer.apply_chat_template(history, tools=tools, tokenize=False)
     input_ids = tokenizer.encode(template, return_tensors="pt").to(model.device)
     outputs = model.generate(
         input_ids,  # input_ids is the input tensor
@@ -122,11 +106,23 @@ def generate_response(prompt) -> GenResponse:
         return GenResponse(response, func=None)
 
 
-if __name__ == "__main__":
-    response = generate_response("get all jobs?")
-    if response.func is not None:
-        print("Function call:")
-        print(json.dumps(response.func, indent=2))
+async def run_async():
+    async with sse_client(mcp_server_url) as stream:
+        async with ClientSession(*stream) as session:
+            await session.initialize()
+            print("Session initialized")
+            tools = parse_tools(await session.list_tools())
+            response = generate_response("get all jobs?", tools)
+            if response.func is not None:
+                func_name = response.func["function"]
+                func_args = response.func["parameters"]
+                print(f"Calling {func_name} with arguments {func_args} ")
+                response = await session.call_tool(func_name, func_args)
+                print("Response from tool:", json.dumps(response, indent=2))
+            else:
+                print("Assistant:", response.response)
+    return
 
-    else:
-        print("Assistant:", response.response)
+
+if __name__ == "__main__":
+    asyncio.run(run_async())
