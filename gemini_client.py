@@ -50,15 +50,48 @@ async def run_agent():
             tools = await load_mcp_tools(session)
             agent = create_react_agent(llm, tools)
             print("MCP Client Started! Type 'quit' to exit.")
+            chat_history = []  # Initialize chat history
             while True:
                 query = input("User: ").strip()
                 if query.lower() == "quit":
                     break
-                # Send user query to agent and print formatted response
-                response = await agent.ainvoke({"messages": query})
-                for message in response["messages"]:
-                    if message.type == "ai":
-                        print(f"Assistant: {message.content}")
+
+                # Add user query to chat history
+                chat_history.append({"role": "user", "content": query})
+
+                # Send chat history to agent and print formatted response
+                try:
+                    response = await agent.ainvoke({"messages": chat_history})
+
+                    if "messages" not in response:
+                        print("Assistant: [No response generated]")
+                        # Remove the last user message if no response was generated
+                        chat_history.pop()
+                        continue
+
+                    ai_response_content = ""
+                    for message in response["messages"]:
+                        if hasattr(message, "type"):
+                            if message.type == "ai":
+                                ai_response_content = message.content
+                                print(f"Assistant: {ai_response_content}")
+                        else:
+                            print(f"Unknown message format: {message}")
+
+                    # Add AI response to chat history
+                    if ai_response_content:
+                        chat_history.append(
+                            {"role": "assistant", "content": ai_response_content}
+                        )
+                    else:
+                        # If AI response was empty or not found, remove the last user message
+                        chat_history.pop()
+
+                except Exception as e:
+                    print(f"Error processing response: {str(e)}")
+                    # Remove the last user message if an error occurred
+                    if chat_history and chat_history[-1]["role"] == "user":
+                        chat_history.pop()
     return
 
 
