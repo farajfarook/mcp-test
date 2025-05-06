@@ -3,6 +3,7 @@ from mcp.client.sse import sse_client
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import asyncio
+import json
 
 
 # Initialize the SSE client
@@ -61,19 +62,34 @@ except Exception as e:
     exit()
 
 
-def generate_response(prompt):
-    history = [
-        {
-            "role": "system",
-            "content": (
-                "You are a helpful assistant. Only use tools when **explicitly asked** to do so. "
-                "Do not use tools for general questions; answer directly whenever possible."
-            ),
-        },
-        {"role": "user", "content": "Hi there!"},
-        {"role": "assistant", "content": "Hello! How can I assist you today?"},
-        {"role": "user", "content": prompt},
-    ]
+history = [
+    {
+        "role": "system",
+        "content": (
+            "You are a helpful assistant. Only use tools when **explicitly asked** to do so. "
+            "Do not use tools for general questions; answer directly whenever possible."
+        ),
+    },
+    {"role": "user", "content": "Hi there!"},
+    {"role": "assistant", "content": "Hello! How can I assist you today?"},
+]
+
+
+def add_history(role, content):
+    history.append({"role": role, "content": content})
+
+
+class GenResponse:
+    def __init__(self, response: str, func: dict):
+        self.response = response
+        self.func = func
+
+    response: str
+    func: dict
+
+
+def generate_response(prompt) -> GenResponse:
+    add_history("user", prompt)
     template = tokenizer.apply_chat_template(
         history, tools=parsed_tools, tokenize=False
     )
@@ -94,8 +110,23 @@ def generate_response(prompt):
     response = response.replace("<|start_header_id|>assistant<|end_header_id|>", "")
     response = response.replace("<|eot_id|>", "")
     response = response.strip()
-    return response
+
+    try:
+        json_obj = json.loads(response)
+        if isinstance(json_obj, dict) and json_obj.get("type") == "function":
+            print("Found valid JSON object with type=function:")
+            print(json.dumps(json_obj, indent=2))
+        return GenResponse(response, func=json_obj)
+    except json.JSONDecodeError:
+        add_history("assistant", response)
+        return GenResponse(response, func=None)
 
 
 if __name__ == "__main__":
-    print(generate_response("get all jobs?"))
+    response = generate_response("get all jobs?")
+    if response.func is not None:
+        print("Function call:")
+        print(json.dumps(response.func, indent=2))
+
+    else:
+        print("Assistant:", response.response)
