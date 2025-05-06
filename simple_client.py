@@ -74,8 +74,8 @@ def parse_tools(tools):
     return parsed_tools
 
 
-def generate_response(prompt, tools) -> GenResponse:
-    add_history("user", prompt)
+def generate_response(prompt, tools, role="user") -> GenResponse:
+    add_history(role, prompt)
     template = tokenizer.apply_chat_template(history, tools=tools, tokenize=False)
     input_ids = tokenizer.encode(template, return_tensors="pt").to(model.device)
     outputs = model.generate(
@@ -93,8 +93,9 @@ def generate_response(prompt, tools) -> GenResponse:
     # Strip out special tokens
     response = response.replace("<|start_header_id|>assistant<|end_header_id|>", "")
     response = response.replace("<|eot_id|>", "")
+    response = response.replace("<|eom_id|>", "")
     response = response.strip()
-
+    add_history("assistant", response)
     try:
         json_obj = json.loads(response)
         if isinstance(json_obj, dict) and json_obj.get("type") == "function":
@@ -102,7 +103,6 @@ def generate_response(prompt, tools) -> GenResponse:
             print(json.dumps(json_obj, indent=2))
         return GenResponse(response, func=json_obj)
     except json.JSONDecodeError:
-        add_history("assistant", response)
         return GenResponse(response, func=None)
 
 
@@ -112,14 +112,25 @@ async def run_async():
             await session.initialize()
             print("Session initialized")
             tools = parse_tools(await session.list_tools())
-            response = generate_response("get all jobs?", tools)
-            if response.func is not None:
-                func_name = response.func["function"]
-                func_args = response.func["parameters"]
-                print(f"Calling {func_name} with arguments {func_args} ")
-                response = await session.call_tool(func_name, func_args)
-                print("Response from tool:", json.dumps(response, indent=2))
-            else:
+
+            while True:
+                user_input = input("User: ")
+                if user_input.lower() == "exit":
+                    break
+
+                response = generate_response(user_input, tools)
+                while response.func is not None:
+                    func_name = response.func["function"]
+                    func_args = response.func["parameters"]
+                    print(f"Calling tool: {func_name} with args: {func_args}")
+                    tool_response = await session.call_tool(func_name, func_args)
+                    tool_response_texts = []
+                    for text in tool_response.content:
+                        tool_response_texts.append(text)
+                    response = generate_response(
+                        "\n\n".join(tool_response_texts), tools, role=func_name
+                    )
+
                 print("Assistant:", response.response)
     return
 
