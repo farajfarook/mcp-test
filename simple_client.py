@@ -6,8 +6,8 @@ import asyncio
 import json
 
 models = {
-    "llama_3b": "meta-llama/Llama-3.2-3B-Instruct",
     "llama_1b": "meta-llama/Llama-3.2-1B-Instruct",
+    "llama_3b": "meta-llama/Llama-3.2-3B-Instruct",
 }
 selected_model = "llama_3b"
 model_name = models[selected_model]
@@ -120,15 +120,20 @@ async def run_async():
 
                 response = generate_response(user_input, tools)
                 while response.func is not None:
-                    func_name = response.func["function"]
-                    func_args = response.func["parameters"]
+                    func = response.func
+                    func_name = func.get("function") or func.get("name")
+                    func_args = func.get("parameters")
                     print(f"Calling tool: {func_name} with args: {func_args}")
                     tool_response = await session.call_tool(func_name, func_args)
                     tool_response_texts = []
                     for text in tool_response.content:
-                        tool_response_texts.append(text)
+                        if text.type == "text":
+                            tool_response_texts.append(text.text)
+                    joined_response_text = "\n\n".join(tool_response_texts)
+                    # print("Tool response:", joined_response_text)
+                    add_history("tool", joined_response_text)
                     response = generate_response(
-                        "\n\n".join(tool_response_texts), tools, role=func_name
+                        "Whats the answer in your words", tools
                     )
 
                 print("Assistant:", response.response)
