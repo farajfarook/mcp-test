@@ -1,0 +1,2 @@
+- Before running any Python-related commands (e.g., `python script.py`, `uv pip install`, `pip install`), always ensure the project's virtual environment is activated. The typical activation command for this project is `.venv\Scripts\activate` on Windows.
+- This project uses `uv` for Python package management. Prefer `uv pip install <package>` or `uv sync` (if a `requirements.txt` or `pyproject.toml` with dependencies is updated) over `pip install`.
