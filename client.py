@@ -1,22 +1,24 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 
-models = {"llama_3b": "meta-llama/Llama-3.2-3B-Instruct"}
+models = {"llama_3b": "meta-llama/Llama-3.2-1B-Instruct"}
 selected_model = "llama_3b"
 model_name = models[selected_model]
 tokenizer_name = models[selected_model]
 
 print(f"Loading model: {model_name}")
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"Using device: {device}")
+
 try:
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
+        torch_dtype=(torch.float16 if device == "cuda" else torch.float32),
         device_map="auto",
-        torch_dtype=torch.float16,
-        trust_remote_code=True,
     )
-    print("Model loaded successfully.")
+    print("Model and tokenizer loaded successfully.")
 except Exception as e:
     print(f"Error loading model or tokenizer: {e}")
     exit()
