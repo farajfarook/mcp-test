@@ -34,7 +34,7 @@ async def fetch_parsed_tools():
             for tool in tools.tools:
                 parsed_tool = get_parsed_tools(tool)
                 parsed_tools.append(parsed_tool)
-                print(f"Tool: {tool.name} - {tool.description}")
+                print(f"Tool: {tool.name}")
     return
 
 
@@ -93,4 +93,4 @@ def generate_response(prompt):
 
 
 if __name__ == "__main__":
-    generate_response("What is the weather like today?")
+    print(generate_response("get all jobs?"))
